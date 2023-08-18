@@ -49,6 +49,25 @@
 			<version>2.14.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>dev.failsafe</groupId>
+			<artifactId>failsafe</artifactId>
+			<version>3.3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.6.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>6.3.0.CR1</version>
+		</dependency>
+
+
 	</dependencies>
 
 
