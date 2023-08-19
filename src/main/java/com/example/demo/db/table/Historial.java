@@ -1,24 +1,22 @@
 package com.example.demo.db.table;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "historial")
 public class Historial {
 
     @Id
-    @Column(name = "id") private int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id",unique=true, nullable = false)  private Integer id;
     @Column(name = "url") private String URL;
     @Column(name = "value1") private Integer value1;
     @Column(name = "value2") private Integer value2;
     @Column(name = "percentage") private Integer percentage;
     @Column(name = "result") private Integer result;
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
