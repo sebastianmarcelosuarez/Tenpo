@@ -6,7 +6,9 @@ import com.example.demo.request.HistoryRequest;
 import com.example.demo.request.SumRequest;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
-import org.hibernate.query.Page;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +16,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 import java.time.Duration;
 import java.util.List;
@@ -50,7 +48,9 @@ public class Controller {
      *      Si el servicio falla, se puede reintentar hasta 3 veces.
      *
      * 2) Historial de todos los llamados a todos los endpoint junto con la respuesta en caso de haber sido exitoso.
-     *      Responder en Json, con data paginada. El guardado del historial de llamadas no debe sumar tiempo al servicio invocado,
+     *      Responder en Json, con data paginada.
+     *      //FALTA ESTO!, HACERLO VIA THREAD!!!!!!!!
+     *      El guardado del historial de llamadas no debe sumar tiempo al servicio invocado,
      *      y en caso de falla, no debe impactar el llamado al servicio principal.
      *
      * 3) La api soporta recibir como máximo 3 rpm (request / minuto), en caso de superar ese umbral, debe retornar un error con el código http y mensaje adecuado.
@@ -64,7 +64,7 @@ public class Controller {
 
     @CrossOrigin
     @GetMapping("/calculator/sum")
-    private ResponseEntity suma(@RequestBody SumRequest sumRequest) {
+    ResponseEntity suma(@RequestBody SumRequest sumRequest) {
 
         if (this.requestAllowed == 0){
             System.out.println("request allowed LIMIT REACHED!!!!" );
@@ -92,7 +92,7 @@ public class Controller {
 
     @CrossOrigin
     @GetMapping("/calculator/history")
-    private ResponseEntity history(@RequestBody HistoryRequest historyRequest) {
+    ResponseEntity history(@RequestBody HistoryRequest historyRequest) {
 
         try{
             List porcentualResult = getSumHistory(historyRequest);
@@ -103,7 +103,7 @@ public class Controller {
         }
     }
 
-    private List getSumHistory(HistoryRequest historyRequest) {
+    List getSumHistory(HistoryRequest historyRequest) {
         Configuration configuration = new Configuration();
         configuration.configure("hibernate.cfg.xml");
         configuration.addAnnotatedClass(Historial.class);
@@ -117,30 +117,6 @@ public class Controller {
 
 
         // Calculate pagination parameters
-/**
-        int pageNumber = 1;
-        if (historyRequest.getCurrentPage() != null && historyRequest.getCurrentPage() >= 0 ) {
-            pageNumber =  historyRequest.getCurrentPage();
-        }
-        final int pageSize = 20;
-       // int firstResult = (pageNumber - 1) * pageSize;
-
-        Page page = Page.page(pageSize,pageNumber);
-        query.setPage(page);
-
-        if (historyRequest.getAction().equalsIgnoreCase("next")) {
-            query.setPage(page.next());
-        }
-        if ((historyRequest.getAction().equalsIgnoreCase("previous"))){
-            try{
-                query.setPage(page.previous());
-            }catch (IllegalStateException e) {
-                query.setPage(page);
-            }
-        }
-
-**/
-// Calculate pagination parameters
 
         int pageNumber = 1;
         if (historyRequest.getCurrentPage() != null && historyRequest.getCurrentPage() >= 0 ) {
@@ -155,7 +131,7 @@ public class Controller {
         return  query.list();
     }
 
-    private Integer calculatePercentageValue(SumRequest sumRequest) throws TimeoutException {
+    Integer calculatePercentageValue(SumRequest sumRequest) throws TimeoutException {
        Integer percentage = null;
             try {
                 percentage = getFuturePercentage();
@@ -181,13 +157,24 @@ public class Controller {
         historial.setResult(sumados + ( (sumados * percentage) / 100));
         historial.setURL("/calculator/sum");
 
-        saveHistoricalResults(historial);
+         ExecutorService executor
+                = Executors.newSingleThreadExecutor();
+             executor.submit(() -> {
+                 try{
+                     saveHistoricalResults(historial);
+                 } catch (Exception e) {
+                     System.out.println("error while saving history: " + e.getMessage());
+                 }
+
+             });
+
 
         return sumados + ( (sumados * percentage) / 100);
     }
 
-    private void saveHistoricalResults(Historial historial) {
+    void saveHistoricalResults(Historial historial) {
         //save info on db
+        //test error
 
         Configuration configuration = new Configuration();
         configuration.configure("hibernate.cfg.xml");
@@ -208,7 +195,7 @@ public class Controller {
 
     }
 
-    private Integer getFuturePercentage() throws TimeoutException {
+    Integer getFuturePercentage() throws TimeoutException {
         RetryPolicy<Integer> retry = RetryPolicy.<Integer>builder()
                 .withDelay(Duration.ofMillis(300))
                 .withMaxRetries(3)
@@ -228,6 +215,16 @@ public class Controller {
                 Thread.sleep(10000);
                 return ThreadLocalRandom.current().nextInt(1, 100);
             });
+    }
+
+    String mockMeNow(){
+        return "I am not mocked!";
+    }
+
+    String iCallMockMeNow(){
+       System.out.println("INIT ICALLMOCKMENOW");
+       return this.mockMeNow();
+
     }
 
 }
