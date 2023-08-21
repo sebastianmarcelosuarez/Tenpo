@@ -67,56 +67,43 @@ public class Controller {
     ResponseEntity suma(@RequestBody SumRequest sumRequest) {
 
         if (this.requestAllowed == 0){
-            System.out.println("request allowed LIMIT REACHED!!!!" );
             return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
         }
 
         try{
             this.requestAllowed--;
-            System.out.println("request allowed init:" +   this.requestAllowed);
             Integer porcentualResult = calculatePercentageValue(sumRequest);
-            return new ResponseEntity<Integer>(porcentualResult, HttpStatus.OK);
+            return new ResponseEntity<>(porcentualResult, HttpStatus.OK);
         } catch (TimeoutException e) {
-            System.out.println("error" +  e.getMessage());
             return  ResponseEntity
                     .status(HttpStatus.REQUEST_TIMEOUT)
                     .body("Error Message due timeOut");
         } catch (Exception e) {
-            System.out.println("error" +  e.getMessage());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return  ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Generic Exception: " + e.getMessage());
         }finally {
             this.requestAllowed++;
-            System.out.println("request allowed end:" +   this.requestAllowed);
         }
     }
 
     @CrossOrigin
     @GetMapping("/calculator/history")
-    ResponseEntity history(@RequestBody HistoryRequest historyRequest) {
+     ResponseEntity history(@RequestBody HistoryRequest historyRequest) {
 
         try{
             List porcentualResult = getSumHistory(historyRequest);
             return new ResponseEntity<List<Historial>>(porcentualResult, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("error" +  e.getMessage());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 
     List getSumHistory(HistoryRequest historyRequest) {
-        Configuration configuration = new Configuration();
-        configuration.configure("hibernate.cfg.xml");
-        configuration.addAnnotatedClass(Historial.class);
-
-        SessionFactory sessionFactory
-                = configuration.buildSessionFactory();
+        Session session = getSession();
 
         String hql = "from Historial";
-        Session session = sessionFactory.openSession();
         Query query = session.createQuery(hql, Historial.class);
-
-
-        // Calculate pagination parameters
 
         int pageNumber = 1;
         if (historyRequest.getCurrentPage() != null && historyRequest.getCurrentPage() >= 0 ) {
@@ -132,7 +119,7 @@ public class Controller {
     }
 
     Integer calculatePercentageValue(SumRequest sumRequest) throws TimeoutException {
-       Integer percentage = null;
+       Integer percentage;
             try {
                 percentage = getFuturePercentage();
             } catch (TimeoutException e) {
@@ -173,26 +160,21 @@ public class Controller {
     }
 
     void saveHistoricalResults(Historial historial) {
-        //save info on db
-        //test error
+        Session session = getSession();
+        session.beginTransaction();
+        session.persist(historial);
+        session.getTransaction().commit();
+    }
 
+    private Session getSession() {
         Configuration configuration = new Configuration();
         configuration.configure("hibernate.cfg.xml");
         configuration.addAnnotatedClass(Historial.class);
 
-        // Create Session Factory
         SessionFactory sessionFactory
                 = configuration.buildSessionFactory();
 
-        // Initialize Session Object
-        Session session = sessionFactory.openSession();
-
-        session.beginTransaction();
-
-        session.save(historial);
-
-        session.getTransaction().commit();
-
+       return sessionFactory.openSession();
     }
 
     Integer getFuturePercentage() throws TimeoutException {
@@ -204,7 +186,7 @@ public class Controller {
                 .build();
 
         return Failsafe.with(retry)
-                .get(() -> getPercentageServiceMocked().get(30000, TimeUnit.MILLISECONDS));
+                .get(() -> getPercentageServiceMocked().get(3000, TimeUnit.MILLISECONDS));
     }
 
     private Future<Integer> getPercentageServiceMocked() {
@@ -212,19 +194,9 @@ public class Controller {
                 = Executors.newSingleThreadExecutor();
         return executor.submit(() -> {
             // use a variable to simulate a timeout exception
-                Thread.sleep(10000);
+           //     Thread.sleep(1000);
                 return ThreadLocalRandom.current().nextInt(1, 100);
             });
-    }
-
-    String mockMeNow(){
-        return "I am not mocked!";
-    }
-
-    String iCallMockMeNow(){
-       System.out.println("INIT ICALLMOCKMENOW");
-       return this.mockMeNow();
-
     }
 
 }
