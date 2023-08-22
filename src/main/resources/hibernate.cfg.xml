@@ -6,13 +6,16 @@
     <session-factory>
 
         <!-- Set URL -->
-        <property name = "hibernate.connection.url">jdbc:postgresql://localhost/Tenpo</property>
+        <!-- <property name = "hibernate.connection.url">jdbc:postgresql://localhost/Tenpo</property>-->
 
+        <property name = "hibernate.connection.url">jdbc:postgresql://java_db/postgres</property>
+
+        <property name="hbm2ddl.auto">update</property>
         <!-- Set User Name -->
         <property name = "hibernate.connection.username">postgres</property>
 
         <!-- Set Password -->
-        <property name = "hibernate.connection.password">admin</property>
+        <property name = "hibernate.connection.password">postgres</property>
 
         <!-- Set Driver Name -->
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>

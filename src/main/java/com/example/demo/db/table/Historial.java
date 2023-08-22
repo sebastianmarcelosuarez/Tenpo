@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 public class Historial {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id",unique=true, nullable = false)  private Integer id;
     @Column(name = "url") private String URL;
     @Column(name = "value1") private Integer value1;
