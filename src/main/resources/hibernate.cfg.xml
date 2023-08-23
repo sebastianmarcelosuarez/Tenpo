@@ -6,7 +6,6 @@
     <session-factory>
 
         <!-- Set URL -->
-        <!-- <property name = "hibernate.connection.url">jdbc:postgresql://localhost/Tenpo</property>-->
 
         <property name = "hibernate.connection.url">jdbc:postgresql://java_db/postgres</property>
 
